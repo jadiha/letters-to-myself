@@ -17,7 +17,7 @@ Each day, you write one letter. It gets sealed, saved, and added to your collect
 
 ## Stack
 
-- Plain HTML, CSS, and JavaScript — no build step
+- Plain HTML
 - [Supabase](https://supabase.com) for auth and database
 - Deployed on [Vercel](https://vercel.com)
 
