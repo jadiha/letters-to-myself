@@ -866,7 +866,13 @@
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
-    if (!error && data) {
+    if (error) {
+      if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+        await db.auth.signOut()
+        return
+      }
+    }
+    if (data) {
       data.forEach(l => { letters.push(l); addCard(l) })
     }
     updateView()
@@ -965,9 +971,9 @@
       return
     }
 
-    const { data: { session } } = await db.auth.getSession()
+    const { data: { session }, error: sessionError } = await db.auth.getSession()
     const userId = session?.user?.id
-    if (!userId) return
+    if (!userId) { await db.auth.signOut(); return }
 
     if (currentEditCard) {
       const idx = letters.findIndex(l => l.date === todayFormatted())
