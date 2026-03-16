@@ -852,10 +852,14 @@
 
   /* ── Persistence: save ─────────────────────────────────────── */
   async function persistLetter(letter, userId) {
-    await db.from('letters').upsert(
+    const { error } = await db.from('letters').upsert(
       { user_id: userId, date: letter.date, text: letter.text },
       { onConflict: 'user_id,date' }
     )
+    if (error) {
+      console.error('Save error:', error.message, error.code)
+      alert('Could not save: ' + error.message)
+    }
   }
 
   /* ── Persistence: load ─────────────────────────────────────── */
