@@ -548,6 +548,30 @@
     .auth-email::placeholder { color: rgba(168,136,152,0.45); font-style: italic; }
     .auth-email:focus { border-bottom-color: var(--pink-accent); }
 
+    .auth-password {
+      display: block; width: 100%;
+      background: transparent; border: none;
+      border-bottom: 1px solid var(--border-mid);
+      outline: none;
+      font-family: var(--f-hand); font-size: 1.05rem; color: var(--ink);
+      text-align: center; padding: 8px 4px;
+      margin-top: 14px;
+      transition: border-color 0.2s;
+    }
+    .auth-password::placeholder { color: rgba(168,136,152,0.45); font-style: italic; }
+    .auth-password:focus { border-bottom-color: var(--pink-accent); }
+
+    .auth-toggle {
+      margin-top: 16px;
+      font-family: var(--f-title); font-size: 0.75rem;
+      font-style: italic; letter-spacing: 0.06em;
+      color: var(--ink-light);
+    }
+    .auth-toggle a {
+      color: var(--pink-accent); cursor: pointer;
+      text-decoration: underline; text-underline-offset: 2px;
+    }
+
     .auth-msg {
       margin-top: 18px; min-height: 22px;
       font-family: var(--f-title); font-size: 0.8rem;
@@ -574,10 +598,12 @@
     <h1 class="page-title">Letters to Myself</h1>
     <p class="page-subtitle">a daily note of gratitude</p>
     <div class="rule" style="margin: 20px 0;">❧</div>
-    <p class="auth-prompt">enter your email to receive a sign-in link</p>
+    <p class="auth-prompt" id="authPrompt">welcome back — sign in to your letters</p>
     <input type="email" id="authEmail" class="auth-email" placeholder="your@email.com" autocomplete="email" />
-    <button id="authSubmit" class="btn-write" style="margin-top: 20px; width: 100%;">✉ &nbsp;send me a link</button>
+    <input type="password" id="authPassword" class="auth-password" placeholder="password" autocomplete="current-password" />
+    <button id="authSubmit" class="btn-write" style="margin-top: 20px; width: 100%;">✦ &nbsp;sign in</button>
     <div id="authMsg" class="auth-msg"></div>
+    <p class="auth-toggle" id="authToggle">new here? <a id="authSwitchLink">create an account</a></p>
   </div>
 </div>
 
@@ -689,8 +715,11 @@
   /* ── DOM refs ──────────────────────────────────────────────── */
   const authScreen    = document.getElementById('authScreen')
   const authEmail     = document.getElementById('authEmail')
+  const authPassword  = document.getElementById('authPassword')
   const authSubmit    = document.getElementById('authSubmit')
   const authMsg       = document.getElementById('authMsg')
+  const authPrompt    = document.getElementById('authPrompt')
+  const authSwitchLink= document.getElementById('authSwitchLink')
   const mainApp       = document.getElementById('mainApp')
   const btnSignOut    = document.getElementById('btnSignOut')
   const grid          = document.getElementById('lettersGrid')
@@ -727,33 +756,63 @@
     updateWriteButton()
   }
 
-  /* ── Auth: send magic link ─────────────────────────────────── */
+  /* ── Auth: mode toggle ─────────────────────────────────────── */
+  let authMode = 'signin' // 'signin' | 'signup'
+
+  authSwitchLink.addEventListener('click', () => {
+    if (authMode === 'signin') {
+      authMode = 'signup'
+      authPrompt.textContent = 'create your account'
+      authSubmit.innerHTML = '✦ &nbsp;create account'
+      authSwitchLink.textContent = 'sign in instead'
+      authPassword.placeholder = 'choose a password'
+      authPassword.autocomplete = 'new-password'
+    } else {
+      authMode = 'signin'
+      authPrompt.textContent = 'welcome back — sign in to your letters'
+      authSubmit.innerHTML = '✦ &nbsp;sign in'
+      authSwitchLink.textContent = 'create an account'
+      authPassword.placeholder = 'password'
+      authPassword.autocomplete = 'current-password'
+    }
+    setAuthMsg('', false)
+  })
+
+  /* ── Auth: sign in / sign up ───────────────────────────────── */
   authSubmit.addEventListener('click', async () => {
-    const email = authEmail.value.trim()
-    if (!email) { setAuthMsg('please enter your email ✿', false); return }
+    const email    = authEmail.value.trim()
+    const password = authPassword.value
+
+    if (!email)    { setAuthMsg('please enter your email ✿', false); return }
+    if (!password) { setAuthMsg('please enter a password ✿', false); return }
+    if (authMode === 'signup' && password.length < 6) {
+      setAuthMsg('password must be at least 6 characters', true); return
+    }
 
     authSubmit.disabled = true
-    authSubmit.textContent = 'sending…'
+    authSubmit.textContent = authMode === 'signin' ? 'signing in…' : 'creating account…'
     setAuthMsg('', false)
 
-    const { error } = await db.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: 'https://letters-to-myself.vercel.app' }
-    })
+    let error
+    if (authMode === 'signin') {
+      ;({ error } = await db.auth.signInWithPassword({ email, password }))
+    } else {
+      ;({ error } = await db.auth.signUp({ email, password }))
+    }
 
     authSubmit.disabled = false
-    authSubmit.innerHTML = '✉ &nbsp;send me a link'
+    authSubmit.innerHTML = authMode === 'signin' ? '✦ &nbsp;sign in' : '✦ &nbsp;create account'
 
     if (error) {
       setAuthMsg(error.message, true)
-    } else {
-      setAuthMsg('check your inbox — a link is on its way ✿', false)
-      authEmail.value = ''
     }
   })
 
-  authEmail.addEventListener('keydown', e => {
+  authPassword.addEventListener('keydown', e => {
     if (e.key === 'Enter') authSubmit.click()
+  })
+  authEmail.addEventListener('keydown', e => {
+    if (e.key === 'Enter') authPassword.focus()
   })
 
   function setAuthMsg(text, isError) {
