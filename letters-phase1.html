@@ -489,6 +489,7 @@
     ========================================================= */
     .btn-signout {
       position: fixed; top: 18px; right: 22px;
+      transition: opacity 0.3s ease;
       background: transparent; border: 1px solid var(--border);
       color: var(--ink-light); font-family: var(--f-title); font-size: 0.72rem;
       letter-spacing: 0.16em; text-transform: lowercase;
@@ -1016,6 +1017,18 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && writeOverlay.classList.contains('open')) closeOverlay()
   })
+
+  /* ── Hide sign-out on scroll ───────────────────────────────── */
+  let scrollTimer
+  window.addEventListener('scroll', () => {
+    btnSignOut.style.opacity = '0'
+    btnSignOut.style.pointerEvents = 'none'
+    clearTimeout(scrollTimer)
+    scrollTimer = setTimeout(() => {
+      btnSignOut.style.opacity = '1'
+      btnSignOut.style.pointerEvents = ''
+    }, 1000)
+  }, { passive: true })
 
 </script>
 </body>
