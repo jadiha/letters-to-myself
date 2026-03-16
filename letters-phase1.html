@@ -453,7 +453,8 @@
     /* Paper action buttons */
     .paper-actions {
       display: flex; align-items: center; justify-content: flex-end;
-      gap: 12px; position: relative; z-index: 1;
+      gap: 12px; position: sticky; bottom: 0; z-index: 1;
+      background: var(--paper); padding-top: 12px;
     }
 
     .btn-cancel-write {
@@ -833,11 +834,18 @@
   })
 
   /* ── Auth: state changes ───────────────────────────────────── */
+  let currentUserId = null
   db.auth.onAuthStateChange(async (event, session) => {
     if (session?.user) {
-      showApp()
-      await loadLetters(session.user.id)
+      if (session.user.id !== currentUserId) {
+        currentUserId = session.user.id
+        letters = []
+        grid.innerHTML = ''
+        showApp()
+        await loadLetters(session.user.id)
+      }
     } else {
+      currentUserId = null
       showAuth()
     }
   })
